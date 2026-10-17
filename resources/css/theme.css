@@ -1,0 +1,186 @@
+:root {
+    color-scheme: light;
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+    --black: #f4f4f5;
+    --charcoal: #e4e4e7;
+    --charcoal-2: #d4d4d8;
+    --white: #18181b;
+    --off-white: #222225;
+    --light-gray: #353539;
+    --gray: #a1a1aa;
+    --gray-dark: #c4c4ca;
+    --line: #39393f;
+    --shadow-s: 0 2px 8px rgba(0, 0, 0, .24);
+    --shadow: 0 10px 30px rgba(0, 0, 0, .38);
+    --shadow-l: 0 24px 60px rgba(0, 0, 0, .55);
+}
+
+.theme-toggle svg {
+    width: 19px;
+    height: 19px;
+}
+
+.product-image-placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 48px;
+    background: var(--off-white);
+    border: 1px solid var(--line);
+}
+
+.site-footer .col-news > div svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+}
+
+.theme-icon-sun,
+html[data-theme="dark"] .theme-icon-moon {
+    display: none;
+}
+
+html[data-theme="dark"] .theme-icon-sun,
+html:not([data-theme="dark"]) .theme-icon-moon {
+    display: block;
+}
+
+html[data-theme="dark"] body {
+    color: var(--charcoal);
+    background: var(--white);
+}
+
+html[data-theme="dark"] .site-header {
+    background: rgba(24, 24, 27, .94);
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .announce,
+html[data-theme="dark"] .hero,
+html[data-theme="dark"] .hero-strip,
+html[data-theme="dark"] .cta-strip,
+html[data-theme="dark"] .site-footer {
+    background: #0b0b0c;
+}
+
+html[data-theme="dark"] .announce,
+html[data-theme="dark"] .hero-strip,
+html[data-theme="dark"] .cta-strip,
+html[data-theme="dark"] .site-footer,
+html[data-theme="dark"] .site-footer h4,
+html[data-theme="dark"] .site-footer strong {
+    color: #f4f4f5;
+}
+
+html[data-theme="dark"] .site-footer p,
+html[data-theme="dark"] .site-footer a,
+html[data-theme="dark"] .site-footer small {
+    color: #b4b4bb;
+}
+
+html[data-theme="dark"] .site-footer a:hover {
+    color: #fff;
+}
+
+html[data-theme="dark"] .nav-menu-inner,
+html[data-theme="dark"] .drawer,
+html[data-theme="dark"] .search-overlay,
+html[data-theme="dark"] .modal-card,
+html[data-theme="dark"] .modal-head,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .acc,
+html[data-theme="dark"] .info-box,
+html[data-theme="dark"] .table-wrap {
+    background-color: var(--white);
+    color: var(--charcoal);
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .search-overlay {
+    background-color: rgba(24, 24, 27, .98);
+}
+
+html[data-theme="dark"] .drawer-nav a,
+html[data-theme="dark"] .drawer-nav button,
+html[data-theme="dark"] .nav-menu a,
+html[data-theme="dark"] .main-nav a {
+    color: var(--charcoal);
+}
+
+html[data-theme="dark"] .drawer-nav a,
+html[data-theme="dark"] .drawer-nav button,
+html[data-theme="dark"] .drawer-head,
+html[data-theme="dark"] .nav-menu a.all {
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .drawer-foot,
+html[data-theme="dark"] .nav-menu a:hover,
+html[data-theme="dark"] .drawer-nav a:hover,
+html[data-theme="dark"] .drawer-nav button:hover,
+html[data-theme="dark"] .suggest-item:hover,
+html[data-theme="dark"] .modal-close:hover {
+    background-color: var(--off-white);
+}
+
+html[data-theme="dark"] .search-box {
+    border-color: var(--black);
+}
+
+html[data-theme="dark"] .search-box input,
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+    color: var(--charcoal);
+    background-color: var(--white);
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+    color: var(--gray);
+}
+
+html[data-theme="dark"] .bg-off,
+html[data-theme="dark"] .marquee {
+    background-color: var(--off-white);
+    border-color: var(--line);
+}
+
+html[data-theme="dark"] .marquee-track,
+html[data-theme="dark"] .drawer-nav a:hover,
+html[data-theme="dark"] .nav-menu a:hover {
+    color: var(--charcoal);
+}
+
+html[data-theme="dark"] .btn-outline {
+    border-color: var(--black);
+    color: var(--black);
+}
+
+html[data-theme="dark"] .btn-outline:hover {
+    background: var(--black);
+    color: var(--white);
+}
+
+html[data-theme="dark"] table th,
+html[data-theme="dark"] table td,
+html[data-theme="dark"] .sum-line,
+html[data-theme="dark"] .footer-bottom {
+    border-color: var(--line);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    body,
+    .site-header,
+    .card,
+    .panel,
+    .drawer,
+    .search-overlay {
+        transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+    }
+}

@@ -1,0 +1,52 @@
+/* BeastWear.pk Admin — Customers list & details */
+(function () {
+  'use strict';
+  const { esc } = BW.util; const F = BW.fmt;
+
+  function editModal(c, onSaved) {
+    BW.ui.modal({ title: 'Edit Customer', body: `<form id="cForm"><div class="form-row"><div class="form-group"><label class="form-label">Full Name<span class="req">*</span></label><input class="form-control" name="name" required value="${esc(c.name)}"></div><div class="form-group"><label class="form-label">Phone</label><input class="form-control" name="phone" data-validate="phone" value="${esc(c.phone)}"></div></div><div class="form-group"><label class="form-label">Email<span class="req">*</span></label><input class="form-control" type="email" name="email" required value="${esc(c.email)}"></div><div class="form-row"><div class="form-group"><label class="form-label">City</label><input class="form-control" name="city" value="${esc(c.city)}"></div><div class="form-group"><label class="form-label">Area</label><input class="form-control" name="area" value="${esc(c.area || '')}"></div></div><div class="form-group"><label class="form-label">Address</label><textarea class="form-control" name="address" style="min-height:70px">${esc(c.address || '')}</textarea></div></form>`, footer: `<button class="btn btn-outline" data-close>Cancel</button><button class="btn btn-primary" id="cSave">Save Customer</button>`, onOpen: (m) => { m.querySelector('#cSave').onclick = async () => { const f = m.querySelector('#cForm'); if (!BW.ui.validate(f)) return; const data = BW.ui.formData(f); if (![data.city, data.area, data.address].some((value) => value.trim())) { delete data.city; delete data.area; delete data.address; } try { await BW.api.update('customers', c.id, data); BW.ui.closeModal(); BW.toast('Customer updated'); await onSaved(); } catch (error) { BW.toast(error.message, 'error'); } }; } });
+  }
+
+  async function initCustomers() {
+    let customers = await BW.api.list('customers'); const orders = await BW.api.list('orders');
+    const enrich = () => customers.map((c) => Object.assign({}, c, BW.domain.customerStats(orders, c.id)));
+    const search = document.getElementById('cSearch'), status = document.getElementById('cStatus'), city = document.getElementById('cCity'), sort = document.getElementById('cSort');
+    city.innerHTML = '<option value="">All Cities</option>' + [...new Set(customers.map((c) => c.city))].sort().map((c) => `<option>${esc(c)}</option>`).join('');
+    const tbl = BW.table({
+      table: document.getElementById('customersTable'), tbody: document.querySelector('#customersTable tbody'), pager: document.getElementById('pager'), info: document.getElementById('pageInfo'), pageSize: 12, sortKey: 'spending',
+      row: (c) => `<tr><td><div class="flex">${BW.avatar(c.name)}<div><a href="/admin/customers/show?id=${c.id}" class="fw-600">${esc(c.name)}</a><div class="small text-muted">Since ${F.date(c.registeredAt)}</div></div></div></td><td>${esc(c.phone)}</td><td class="text-muted">${esc(c.email)}</td><td>${esc(c.city)}</td><td class="num">${c.total}</td><td class="amount num">${F.money(c.spending)}</td><td class="text-muted">${c.last ? F.date(c.last) : '—'}</td><td>${BW.badge(c.status)}</td><td><div class="actions"><a class="btn-icon" href="/admin/customers/show?id=${c.id}" title="View">${BW.icon('eye')}</a><button class="btn-icon" data-edit="${c.id}" title="Edit">${BW.icon('edit')}</button><button class="btn-icon ${c.status === 'Blocked' ? 'success' : 'danger'}" data-block="${c.id}" title="${c.status === 'Blocked' ? 'Unblock' : 'Block'}">${BW.icon(c.status === 'Blocked' ? 'check' : 'ban')}</button></div></td></tr>`,
+      afterRender: () => {
+        document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => editModal(customers.find((c) => String(c.id) === b.dataset.edit), reload)));
+        document.querySelectorAll('[data-block]').forEach((b) => b.addEventListener('click', () => { const c = customers.find((x) => String(x.id) === b.dataset.block); const blocking = c.status !== 'Blocked'; BW.ui.confirm(blocking ? `Block <b>${esc(c.name)}</b>? They will not be able to place new orders.` : `Unblock <b>${esc(c.name)}</b> and restore ordering access?`, async () => { try { await BW.api.update('customers', c.id, { status: blocking ? 'Blocked' : 'Active' }); BW.toast(blocking ? 'Customer blocked' : 'Customer unblocked', blocking ? 'warning' : 'success'); await reload(); } catch (error) { BW.toast(error.message, 'error'); } }, { yes: blocking ? 'Block' : 'Unblock', danger: blocking }); }));
+      }
+    });
+    const apply = () => { const q = search.value.trim().toLowerCase(); const d = enrich().filter((c) => (!q || (c.name + c.phone + c.email).toLowerCase().includes(q)) && (!status.value || c.status === status.value) && (!city.value || c.city === city.value)); if (sort.value) { tbl.state.sortKey = sort.value; tbl.state.sortDir = sort.value === 'name' ? 1 : -1; } tbl.setData(d); const all = enrich(); document.getElementById('sCount').textContent = all.length; document.getElementById('sActive').textContent = all.filter((c) => c.status === 'Active').length; document.getElementById('sRepeat').textContent = all.filter((c) => c.total > 1).length; document.getElementById('sAvg').textContent = F.money(all.length ? BW.util.sum(all, (c) => c.spending) / all.length : 0); };
+    const reload = async () => { customers = await BW.api.list('customers'); apply(); };
+    search.addEventListener('input', BW.util.debounce(apply, 150)); [status, city, sort].forEach((e) => e.addEventListener('change', apply));
+    apply();
+  }
+
+  async function initCustomerDetails() {
+    const id = BW.util.qs('id'); let c = await BW.api.get('customers', id);
+    if (!c) { BW.toast('Customer not found', 'error'); return setTimeout(() => (location.href = '/admin/customers'), 800); }
+    const orders = (await BW.api.list('orders')).filter((o) => o.customerId === c.id); const reviews = (await BW.api.list('reviews')).filter((r) => r.customerId === c.id);
+    const $ = (s) => document.getElementById(s);
+    const render = () => {
+      const st = BW.domain.customerStats(orders, c.id);
+      $('custName').textContent = c.name; document.title = `${c.name} | BeastWear.pk Admin`;
+      const phone = String(c.phone || '');
+      $('profile').innerHTML = `<div style="text-align:center;padding:8px 0 20px">${BW.avatar(c.name, 'xl')}<h2 style="margin-top:14px;font-size:20px">${esc(c.name)}</h2><div class="flex" style="justify-content:center;margin-top:8px;gap:6px">${BW.badge(c.status)}${st.total > 3 ? BW.badge('VIP', 'badge-dark') : ''}</div></div><dl class="kv"><dt>Phone</dt><dd>${phone ? `<a href="tel:${esc(phone)}">${esc(phone)}</a>` : '—'}</dd><dt>Email</dt><dd><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></dd><dt>City</dt><dd>${esc(c.city)}</dd><dt>Address</dt><dd>${esc(c.address || '')}${c.area ? ', ' + esc(c.area) : ''}</dd><dt>Registered</dt><dd>${F.date(c.registeredAt)}</dd></dl><div class="flex mt-24" style="gap:8px">${phone ? `<a class="btn btn-outline btn-sm" href="https://wa.me/92${phone.replace(/\D/g, '').replace(/^0/, '')}" target="_blank">${BW.icon('whatsapp')} WhatsApp</a>` : ''}<button class="btn btn-outline btn-sm" id="editBtn">${BW.icon('edit')} Edit</button><button class="btn btn-sm ${c.status === 'Blocked' ? 'btn-success' : 'btn-danger'}" id="blockBtn">${BW.icon(c.status === 'Blocked' ? 'check' : 'ban')} ${c.status === 'Blocked' ? 'Unblock' : 'Block'}</button></div>`;
+      $('stats').innerHTML = [['Total Orders', st.total, 'cart'], ['Delivered', st.delivered, 'check'], ['Cancelled', st.cancelled, 'x'], ['Total Spending', F.money(st.spending), 'money', true]].map((s) => `<div class="stat-card ${s[3] ? 'accent' : ''}"><div class="stat-top"><span class="stat-label">${s[0]}</span><span class="stat-icon">${BW.icon(s[2])}</span></div><div class="stat-value">${s[1]}</div></div>`).join('');
+      $('ordersBody').innerHTML = orders.length ? orders.map((o) => `<tr><td><a href="/admin/orders/show?id=${o.id}" class="fw-600">${o.id}</a></td><td class="text-muted">${F.date(o.date)}</td><td><div class="flex" style="gap:4px">${o.items.slice(0, 3).map((i) => `<img class="product-thumb sm" src="${i.image}" title="${esc(i.name)}" alt="">`).join('')}</div></td><td class="small">${esc(o.payment)}</td><td class="amount">${F.money(o.total)}</td><td>${BW.badge(o.status)}</td><td><a class="btn-icon" href="/admin/orders/show?id=${o.id}">${BW.icon('eye')}</a></td></tr>`).join('') : '<tr><td colspan="7" class="table-empty">No orders yet</td></tr>';
+      $('reviewsList').innerHTML = reviews.length ? reviews.map((r) => `<div class="review-card"><div class="flex-between"><strong>${esc(r.product)}</strong>${BW.stars(r.rating)}</div><p class="review-text">${esc(r.text)}</p><div class="flex-between small text-muted"><span>${F.date(r.date)}</span>${BW.badge(r.status)}</div></div>`).join('') : '<div class="empty-state">No reviews from this customer</div>';
+      const cats = {}; orders.forEach((o) => o.items.forEach((i) => (cats[i.name] = (cats[i.name] || 0) + i.qty)));
+      const fav = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      BW.chart.hbars($('favChart'), { items: fav.map(([l, v]) => ({ label: l, value: v })), format: (v) => v + ' pcs' });
+      $('editBtn').onclick = () => editModal(c, async () => { c = await BW.api.get('customers', id); render(); });
+      $('blockBtn').onclick = () => { const blocking = c.status !== 'Blocked'; BW.ui.confirm(blocking ? `Block <b>${esc(c.name)}</b>?` : `Unblock <b>${esc(c.name)}</b>?`, async () => { try { c = await BW.api.update('customers', c.id, { status: blocking ? 'Blocked' : 'Active' }); render(); BW.toast(blocking ? 'Customer blocked' : 'Customer unblocked'); } catch (error) { BW.toast(error.message, 'error'); } }, { yes: blocking ? 'Block' : 'Unblock', danger: blocking }); };
+    };
+    render();
+  }
+
+  BW.ready(() => BW.boot(document.body.dataset.page === 'customer-details' ? initCustomerDetails : initCustomers));
+})();
